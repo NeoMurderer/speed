@@ -18,16 +18,23 @@ export default {
     const speedometer = new Speedometer(this.$draw, {
       el: "#speed",
       min: 0,
-      max: 1000,
+      max: 300,
+      step: 15
     });
+    var i = 0
+
+    const next = () => {
+      if(i == 300) i = -1
+      return ++i; 
+    }
     function getRandomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
     const speed = 400
     setInterval(() => {
-      const rand = getRandomInt(0, 1000)
+      const rand = next()
       speedometer.redraw(rand, speed)
-    }, speed);
+    }, 20);
   }
 };
 </script>

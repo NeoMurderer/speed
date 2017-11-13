@@ -11,8 +11,8 @@ export default class Speedometer {
             size: 500,
             min: -1,
             max: 3,
-            majorTicks: 5,
-            minorTicks: 20,
+            majorTicks: 10,
+            minorTicks: 5,
             transitionDuration: 500,
             data: [
                 {
@@ -63,17 +63,17 @@ export default class Speedometer {
 
         svg.append('svg:text')
             .attr('x', options.cx)
-            .attr('y', options.cy / 2 + fontSize / 2)
+            .attr('y', options.cy / 2 + fontSize / 4)
             .attr('dy', fontSize / 2)
             .attr('text-anchor', 'middle')
             .text(options.label)
-            .style('font-size', fontSize + 'px')
+            .style('font-size', fontSize / 1.5 + 'px')
             .style('fill', '#fff')
             .style('stroke-width', '0px')
 
         this.svg = svg
         this.options = options
-
+        this.tempValue = 60
         // Draw Pointers
         this.drawPointer()
         this.drawLine()
@@ -84,43 +84,29 @@ export default class Speedometer {
         this.redraw(options.min, 0);
         return this
     }
-    transformRotate() {
-        const { options, draw, svg } = this
-        let _currentRotation = this._currentRotation
-        
-        let value = this.tempValue
-        if (!value) {
-            value = 0
-        }
-        var pointerContainer = svg.select(".pointerContainer");
-
-        pointerContainer.selectAll("text").text(Math.round(value));
-
-        var pointer = pointerContainer.selectAll("path");
-        var pointerValue = value;
-        if (value > options.max) pointerValue = options.max + 0.02 * options.range;
-        else if (value < options.min) pointerValue = options.min - 0.02 * options.range;
-        var targetRotation = (this.valueToDegrees(pointerValue) - 90);
-        var currentRotation = this._currentRotation || targetRotation;
-        var rotation = currentRotation + (targetRotation - currentRotation);
-        this._currentRotation = targetRotation;
-        if (!targetRotation) {
-            console.log('error')
-        }
-        const result =  "translate(" + options.cx + ", " + options.cy + ") rotate(" + rotation + ")";
-        console.info('result', result)
-        return result
-    }
     redraw(value, transitionDuration) {
-        const {svg, options} = this
+        const { svg, options } = this
         var pointerContainer = svg.select(".pointerContainer");
 
         pointerContainer.selectAll("text").text(Math.round(value));
-
+        const self = this
         this.tempValue = value
         var pointer = pointerContainer.selectAll("path");
-        pointer.transition()
-            .attr('transform', this.transformRotate.bind(this))
+        pointer.transition().attr('transform', function() {
+
+            var pointerValue = value;
+            if (value > options.max) pointerValue = options.max + 0.02 * options.range;
+            else if (value < options.min) pointerValue = options.min - 0.02 * options.range;
+            var targetRotation = (self.valueToDegrees(pointerValue) - 90);
+            var currentRotation = self._currentRotation || targetRotation;
+            var rotation = currentRotation + (targetRotation - currentRotation);
+            self._currentRotation = targetRotation;
+            if (!targetRotation) {
+                console.log('error')
+            }
+            const result = "rotate(" + rotation + ")";
+            return result
+        })
             .duration(undefined != transitionDuration ? transitionDuration : options.transitionDuration)
         //.delay(0)
         //.ease("linear")
@@ -148,13 +134,50 @@ export default class Speedometer {
         return [head, head1, tail2, tail, tail1, head2, head];
 
     }
+    drawText() {
+        const { options, draw, svg } = this
+        let fontSize = Math.round(options.size / 16);
+
+        for (let major = options.min; major <= options.max; major += options.step) {
+            console.log(major)
+            let anchor = 'middle'
+            let point = this.valueToPoint(major, 0.63);
+            svg.append("svg:text")
+                .attr("x", point.x)
+                .attr("y", point.y * 0.99)
+                .attr("dy", fontSize / 8)
+                .attr("text-anchor", anchor)
+                .text(major)
+                .style("font-size", fontSize / 2 + "px")
+                .style("fill", "#fff")
+                .style("stroke-width", "0px")
+        }
+
+    }
     drawLine() {
         const { options, draw, svg } = this
 
-        let fontSize = Math.round(options.size / 9);
+        let fontSize = Math.round(options.size / 16);
 
         var pointerContainer = svg.append("svg:g").attr("class", "pointerContainer")
-            .attr('transform', this.transformRotate.bind(this))
+        pointerContainer.attr('transform', () => {
+                let value = this.tempValue
+                pointerContainer.selectAll("text").text(Math.round(value));
+
+                var pointer = pointerContainer.selectAll("path");
+                var pointerValue = value;
+                if (value > options.max) pointerValue = options.max + 0.02 * options.range;
+                else if (value < options.min) pointerValue = options.min - 0.02 * options.range;
+                var targetRotation = (this.valueToDegrees(pointerValue) - 90);
+                var currentRotation = this._currentRotation || targetRotation;
+                var rotation = currentRotation + (targetRotation - currentRotation);
+                this._currentRotation = targetRotation;
+                if (!targetRotation) {
+                    console.log('error')
+                }
+                const result = "translate(" + options.cx + ", " + options.cy + ") rotate(" + rotation + ")";
+                return result
+            })
 
         var midValue = (options.min + options.max) / 2;
 
@@ -173,35 +196,38 @@ export default class Speedometer {
             .style("stroke", "#c63310")
             .style("fill-opacity", 0.7)
 
-
-        pointerContainer.append("svg:circle")
-            .attr("cx", options.cx)
-            .attr("cy", options.cy)
-            .attr("r", 0.12 * options.raduis)
-            .style("fill", "#4684EE")
-            .style("stroke", "#666")
-            .style("opacity", 1);
-
-        pointerContainer.selectAll("text")
-            .data([midValue])
-            .enter()
-            .append("svg:text")
-            .attr("x", options.cx)
-            .attr("y", options.size - options.cy / 4 - fontSize)
-            .attr("dy", fontSize / 2)
-            .attr("text-anchor", "middle")
-            .style("font-size", fontSize + "px")
-            .style("fill", "#fff")
-            .style("stroke-width", "0px");
+            {
+                pointerContainer.append("svg:circle")
+                    .attr("cx", options.cx)
+                    .attr("cy", options.cy)
+                    .attr("r", 0.12 * options.raduis)
+                    .style("fill", "#4684EE")
+                    .style("stroke", "#666")
+                    .style("opacity", 1);
+        
+                let fontSize = Math.round(options.size / 16);
+                pointerContainer.selectAll("text")
+                    .data([midValue])
+                    .enter()
+                    .append("svg:text")
+                    .attr("x", 0)
+                    .attr("y", -30)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", fontSize + "px")
+                    .style("fill", "#fff")
+                    .style("stroke-width", "0px")
+                    .attr('transform', 'rotate(80)')
+        
+                this.redraw(options.min, 0);
+            }
 
     }
     drawPointer() {
         const { options, draw, svg } = this
         const majorDelta = options.range / (options.majorTicks - 1);
-        let fontSize = Math.round(options.size / 9);
+        let fontSize = Math.round(options.size / 16);
         for (let major = options.min; major <= options.max; major += majorDelta) {
             const minorDelta = majorDelta / options.minorTicks;
-
             // Draw small points
             for (let minor = major + minorDelta; minor < Math.min(major + majorDelta, options.max); minor += minorDelta) {
                 const point1 = this.valueToPoint(minor, 0.75);
@@ -228,23 +254,7 @@ export default class Speedometer {
                 .style("stroke-width", "2px");
 
             // Add text as point
-
-            let anchor = 'middle'
-            if (major == options.min) {
-                anchor = 'start'
-            } else if (major == options.max) {
-                anchor = 'end'
-            }
-            console.log('DEBUG', major)
-            const k = 1.05
-            svg.append("svg:text")
-                .attr("x", point1.x)
-                .attr("y", point1.y * k)
-                .attr("text-anchor", anchor)
-                .text(major)
-                .style("font-size", fontSize / 2 + "px")
-                .style("fill", "#fff")
-                .style("stroke-width", "0px")
+            this.drawText()
         }
 
     }
