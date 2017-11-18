@@ -1,12 +1,13 @@
 <template>
   <div id="app">
     <h1>Dash</h1>
-    <div id="speed"></div>
+    <div id="widget"></div>
   </div>
 </template>
 
 <script>
 import Speedometer from "./widgets/speedometer";
+import Widget from "./widgets/index";
 export default {
   name: "app",
   data() {
@@ -15,25 +16,19 @@ export default {
     };
   },
   mounted() {
-    const speedometer = new Speedometer(this.$draw, {
-      el: "#speed",
-      min: 0,
-      max: 300,
-      step: 15
-    });
-    var i = 0
-
+    const speedometer = new Widget(this.$draw);
+    var i = 150;
     const next = () => {
-      if(i == 300) i = -1
-      return ++i; 
-    }
+      if (i == 280) i = 150;
+      return ++i;
+    };
     function getRandomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    const speed = 400
+    const speed = 20;
     setInterval(() => {
-      const rand = next()
-      speedometer.redraw(rand, speed)
+      const rand = next();
+      speedometer.redraw(rand, speed);
     }, 20);
   }
 };
