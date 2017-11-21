@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div id="widget"></div>
+      <div v-for="n in 10" v-bind:id="'widget' + n" class="widget"></div>
   </div>
 </template>
 
@@ -11,44 +11,53 @@ export default {
   name: "app",
   data() {
     return {
-      msg: "Welcome to Your Vue.js App"
+      msg: "Welcome to Your Vue.js App",
+      widgets: ["widget", "widget2"]
     };
   },
   mounted() {
-    const speedometer = new Widget(this.$draw);
-    let speed = 10
-    let side = +1
-    
-    const max = 120
-    const min = 50
+    const Draw = this.$draw
+    let speed = 100;
+    let side = +1;
 
-    let i = min
+    const max = 120;
+    const min = 50;
+
+    let i = min;
     const next = () => {
-      if (i == max || i == min -1 ) side*=-1;
-      return i+= 1 * side;
+      if (i == max || i == min - 1) side *= -1;
+      return (i += 1 * side);
     };
     function getRandomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    
-function debounce(func, wait, immediate) {
-	var timeout;
-	return function() {
-		var context = this, args = arguments;
-		var later = function() {
-			timeout = null;
-			if (!immediate) func.apply(context, args);
-		};
-		var callNow = immediate && !timeout;
-		clearTimeout(timeout);
-		timeout = setTimeout(later, wait);
-		if (callNow) func.apply(context, args);
-	};
-};
-    setInterval(() => {
-      const rand = next();
-      debounce(function() {speedometer.redraw(rand, speed);},50)
-    }, 50);
+
+    function debounce(func, wait, immediate) {
+      var timeout;
+      return function() {
+        var context = this,
+          args = arguments;
+        var later = function() {
+          timeout = null;
+          if (!immediate) func.apply(context, args);
+        };
+        var callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+      };
+    }
+    setTimeout(function() { 
+      for(var i = 1; i <= 10; i++) {
+        const speedometer = new Widget(Draw, {
+          el: '#widget' + i
+        });
+        setInterval(() => {
+          const rand = next();
+          speedometer.redraw(rand, speed);
+        }, speed);
+      }
+    }, 2000)
   }
 };
 </script>
@@ -82,5 +91,10 @@ li {
 
 a {
   color: #42b983;
+}
+.widget {
+  width: 300px;
+  float: left;
+  margin: 20;
 }
 </style>

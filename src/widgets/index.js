@@ -19,31 +19,23 @@ export default class Widget {
             y: options.cy - options.raduis * factor * Math.sin(this.valueToRadians(value))
         }
     }
+    radianToPoint(radian, factor) {
+        const options = this.options
+        return {
+            x: options.cx - options.raduis * factor * Math.cos(radian),
+            y: options.cy - options.raduis * factor * Math.sin(radian)
+        }
+    }
     constructor(draw, options = {}) {
         this.options = {
             el: '#widget',
-            get size() {
-                if (window.innerWidth > window.innerHeight) {
-                    return window.innerHeight
-                }
-                return window.innerWidth
-            },
             min: 0,
             max: 280,
             majorTicks: 8,
             minorTicks: 4,
-            step: 40,
-            data: [
-                {
-                    timestamp: Date.now(),
-                    value: 50,
-                    max: 100
-                }, {
-                    timestamp: Date.now() - 60 * 60,
-                    value: 70,
-                    max: 100
-                }
-            ],
+            get size() {
+                return document.querySelector(this.el).offsetWidth
+            },
             get dashWidth() {
                 return 1
             },
@@ -78,7 +70,8 @@ export default class Widget {
         // this.drawBand(this.container,dangetZone, this.options.max, '#3D0E22')
         this.drawDashes()
         this.drawText()
-        const mainBar = this.drawBand(this.container,0, 60, '#1784F9', 'mainBar')
+        this.drawPointer(this.options.min)
+        const mainBar = this.drawBand(this.container, 0, this.options.min, '#1784F9', 'mainBar')
     }
     drawCircle() {
         const options = this.options
@@ -88,7 +81,7 @@ export default class Widget {
             .attr('width', options.size)
             .attr('height', options.size)
 
-        container =  container.append("svg:g").attr("class", "pointerContainer");
+        container = container.append("svg:g").attr("class", "pointerContainer");
         container.append('svg:circle')
             .attr('cx', options.cx)
             .attr('cy', options.cy)
@@ -101,7 +94,6 @@ export default class Widget {
             .attr('r', options.raduis - options.barWidth)
             .style('fill', '#050A20')
 
-        console.log('this.valueToRadians(options.max)', this.valueToRadians(options.max))
         var arc = this.draw.arc()
             .innerRadius(0)
             .outerRadius(options.raduis + 1)
@@ -111,7 +103,6 @@ export default class Widget {
         container.append('path')
             .style('fill', '#050A20')
             .attr('d', arc)
-
             .attr('transform', function (d) {
                 return `translate( ${options.cx}, ${options.cy} )`;
             })
@@ -128,21 +119,31 @@ export default class Widget {
         if (value >= warningZone) {
             color = '#B01922'
         }
-        // const transition = this.mainBar.transition()
+        if(this.prevValue - value > 10) {
+            speed = 0
+        }
         const bar = this.draw.select(this.options.el).select('.mainBar')
-        .transition()
-        .duration(speed)
-        .attr("d", this.getArc(0, value))
-
+        bar.transition().duration(speed).attr("d", this.getArc(0, value))
         this.container.selectAll('text.valueText').text(value)
 
-       
-        // transition.attr('d', this.draw.arc()
-        //     .endAngle(this.valueToRadians(value)))
-        //     .style('fill', color)
-        //     .duration(speed)
-
-        // transition
+        
+        const pointer = (point1, point2, point3, color) => {
+            const angle = this.draw.symbol().type({
+                draw: function (context) {
+                    context.moveTo(point1.x, point1.y);
+                    context.lineTo(point1.x, point1.y);
+                    context.lineTo(point2.x, point2.y);
+                    context.lineTo(point3.x, point3.y);
+                    context.closePath();
+                }
+            })
+            this.container.selectAll('path.pointer').transition().duration(speed).attr("d", angle)
+        }
+        const radianValue = (this.valueToDegrees(value) - 8) * Math.PI / 180
+        const point1 = this.valueToPoint(value, 0.2)
+        const point2 = this.radianToPoint(radianValue, 0.2)
+        const point3 = this.valueToPoint(value, 0.85)
+        pointer(point1, point2, point3, 'red')
     }
     drawText() {
         const { options, draw, container } = this
@@ -166,37 +167,35 @@ export default class Widget {
                 .style('fill', '#fff')
         })
         container.append('svg:text')
-        .attr('x', function () { return options.cx - this.getBBox().width / 2})
-        .attr('y', function () { return options.cy - this.getBBox().height / 2})
-        .attr('class', 'valueText')
-        .attr('text-anchor', 'middle')
-        .text(60)
-        .style('font-size', fontSize+ 'px')
-        .style('fill', '#fff')
+            .attr('x', function () { return options.cx - this.getBBox().width / 2 })
+            .attr('y', function () { return options.cy - this.getBBox().height / 2 })
+            .attr('class', 'valueText')
+            .attr('text-anchor', 'middle')
+            .text(options.min)
+            .style('font-size', fontSize + 'px')
+            .style('fill', '#fff')
 
     }
     getArc(start, value) {
         const arc = this.draw.arc().startAngle(() => {
-            console.log('startAngle', start)
+            // console.log('startAngle', start)
             return this.valueToRadians(start)
         })
-        .endAngle( () => {
-            console.log('endAngle', value)
-            return this.valueToRadians(value)
-        })
-        .innerRadius(this.options.raduis - this.options.barWidth)
-        .outerRadius(this.options.raduis)
+            .endAngle(() => {
+                // console.log('endAngle', value)
+                return this.valueToRadians(value)
+            })
+            .innerRadius(this.options.raduis - this.options.barWidth)
+            .outerRadius(this.options.raduis)
         return arc
     }
-    drawBand(path ,start, end, color, className) {
-        
-        const data = {value: end}
-        console.log('path', path)
+    drawBand(path, start, end, color, className) {
+
         return path
             .append('svg:path')
             .attr('class', className || 'noname')
             .style('fill', color)
-            .attr('d', this.getArc())
+            .attr('d', this.getArc(start, end))
             .attr('transform', () => { return 'translate(' + this.options.cx + ', ' + this.options.cy + ') rotate(270)' });
     }
 
@@ -204,7 +203,7 @@ export default class Widget {
         const { options, draw, container } = this
         const majorDelta = options.range / (options.majorTicks - 1);
         let fontSize = Math.round(options.fontSize);
-        const drawDashLine = (point1, point2, color, width = options.dashWidth) => {
+        const   drawDashLine = (point1, point2, color, width = options.dashWidth) => {
             container.append('svg:line')
                 .attr('x1', point1.x)
                 .attr('y1', point1.y)
@@ -238,5 +237,36 @@ export default class Widget {
                 drawDashLine(point1, point2, '#050A20', 1)
             }
         })
+    }
+    drawPointer(value) {
+        const { options, draw, container } = this
+        // needle.reset()
+        // needle.moveTo(x11.toFloat(), y11.toFloat())
+        // needle.lineTo(x11.toFloat(), y11.toFloat())
+        // needle.lineTo((width / 2 - Math.sin(Math.toRadians((angle + 45).toDouble())) * innerCircleRadius).toFloat(), (height / 2 + Math.cos(Math.toRadians((angle + 45).toDouble())) * innerCircleRadius).toFloat())
+        // needle.lineTo((width / 2 - Math.sin(Math.toRadians(angle + 45 - NEEDLE_ANGLE)) * circleRadius).toFloat(), (height / 2 + Math.cos(Math.toRadians(angle + 45 - NEEDLE_ANGLE)) * circleRadius).toFloat())
+        // needle.close()
+        // c.drawPath(needle, needlePaint)
+        const pointer = (point1, point2, point3, color) => {
+            
+            const angle = this.draw.symbol().type({
+                draw: function (context) {
+                    context.moveTo(point1.x, point1.y);
+                    console.log(point1)
+                    console.log(point2)
+                    console.log(point3)
+                    context.lineTo(point1.x, point1.y);
+                    context.lineTo(point2.x, point2.y);
+                    context.lineTo(point3.x, point3.y);
+                    context.closePath();
+                }
+            })
+            container.append("svg:path").attr('class', 'pointer').attr("d", angle)
+        }
+        this.valueToDegrees(value)
+        const point1 = this.valueToPoint(value, 0.2)
+        const point2 = this.valueToPoint(value + 20, 0.2)
+        const point3 = this.valueToPoint(value, 0.85)
+        pointer(point1, point2, point3, 'red')
     }
 }
