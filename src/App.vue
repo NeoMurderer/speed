@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    <h1>Dash</h1>
     <div id="widget"></div>
   </div>
 </template>
@@ -17,19 +16,39 @@ export default {
   },
   mounted() {
     const speedometer = new Widget(this.$draw);
-    var i = 150;
+    let speed = 10
+    let side = +1
+    
+    const max = 120
+    const min = 50
+
+    let i = min
     const next = () => {
-      if (i == 280) i = 150;
-      return ++i;
+      if (i == max || i == min -1 ) side*=-1;
+      return i+= 1 * side;
     };
     function getRandomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    const speed = 20;
+    
+function debounce(func, wait, immediate) {
+	var timeout;
+	return function() {
+		var context = this, args = arguments;
+		var later = function() {
+			timeout = null;
+			if (!immediate) func.apply(context, args);
+		};
+		var callNow = immediate && !timeout;
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+		if (callNow) func.apply(context, args);
+	};
+};
     setInterval(() => {
       const rand = next();
-      speedometer.redraw(rand, speed);
-    }, 20);
+      debounce(function() {speedometer.redraw(rand, speed);},50)
+    }, 50);
   }
 };
 </script>
