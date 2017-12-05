@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-      <div v-for="n in 10" v-bind:id="'widget' + n" class="widget"></div>
+      <div v-for="n in 50" v-bind:id="'widget' + n" class="widget"></div>
   </div>
 </template>
 
@@ -17,7 +17,7 @@ export default {
   },
   mounted() {
     const Draw = this.$draw
-    let speed = 100;
+    let speed = 150;
     let side = +1;
 
     const max = 120;
@@ -48,14 +48,10 @@ export default {
       };
     }
     setTimeout(function() { 
-      for(var i = 1; i <= 10; i++) {
+      for(var i = 1; i <= 50; i++) {
         const speedometer = new Widget(Draw, {
           el: '#widget' + i
         });
-        setInterval(() => {
-          const rand = next();
-          speedometer.redraw(rand, speed);
-        }, speed);
       }
     }, 2000)
   }
@@ -70,6 +66,8 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+  display: flex;
+  flex-flow: row wrap;
 }
 body {
   background-color: #050a20;
@@ -93,8 +91,6 @@ a {
   color: #42b983;
 }
 .widget {
-  width: 300px;
-  float: left;
-  margin: 20;
+  width: 20%
 }
 </style>

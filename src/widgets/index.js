@@ -72,6 +72,22 @@ export default class Widget {
         this.drawText()
         this.drawPointer(this.options.min)
         const mainBar = this.drawBand(this.container, 0, this.options.min, '#1784F9', 'mainBar')
+
+
+
+        const max = 120;
+        const min = 50;
+        const speed = 120
+        let side = +1;
+        let i = min;
+        const next = () => {
+        if (i == max || i == min - 1) side *= -1;
+        return (i += 1 * side);
+        };
+        setInterval(() => {
+            const rand = next();
+            this.redraw(rand, speed);
+          }, speed);
     }
     drawCircle() {
         const options = this.options
@@ -119,12 +135,11 @@ export default class Widget {
         if (value >= warningZone) {
             color = '#B01922'
         }
-        if(this.prevValue - value > 10) {
-            speed = 0
-        }
-        const bar = this.draw.select(this.options.el).select('.mainBar')
-        bar.transition().duration(speed).attr("d", this.getArc(0, value))
-        this.container.selectAll('text.valueText').text(value)
+        // if(this.prevValue - value > 10) {
+        //     speed = 0
+        // }
+        this.container.select('.mainBar').transition().duration(speed).attr("d", this.getArc(0, value))
+        this.container.select('text.valueText').text(value)
 
         
         const pointer = (point1, point2, point3, color) => {
@@ -137,13 +152,17 @@ export default class Widget {
                     context.closePath();
                 }
             })
-            this.container.selectAll('path.pointer').transition().duration(speed).attr("d", angle)
+           
         }
-        const radianValue = (this.valueToDegrees(value) - 8) * Math.PI / 180
+        // const radianValue = (this.valueToDegrees(value) - 8) * Math.PI / 180
+        // const point2 = this.radianToPoint(radianValue, 0.2)
         const point1 = this.valueToPoint(value, 0.2)
-        const point2 = this.radianToPoint(radianValue, 0.2)
-        const point3 = this.valueToPoint(value, 0.85)
-        pointer(point1, point2, point3, 'red')
+        const point2 = this.valueToPoint(value, 0.85)
+        this.container.select('.pointer').transition().duration(speed)
+            .attr('x1', point1.x)
+            .attr('y1', point1.y)
+            .attr('x2', point2.x)
+            .attr('y2', point2.y)
     }
     drawText() {
         const { options, draw, container } = this
@@ -249,7 +268,7 @@ export default class Widget {
         // c.drawPath(needle, needlePaint)
         const pointer = (point1, point2, point3, color) => {
             
-            const angle = this.draw.symbol().type({
+            const angle = this.draw.symbol().line({
                 draw: function (context) {
                     context.moveTo(point1.x, point1.y);
                     console.log(point1)
@@ -261,12 +280,20 @@ export default class Widget {
                     context.closePath();
                 }
             })
-            container.append("svg:path").attr('class', 'pointer').attr("d", angle)
         }
-        this.valueToDegrees(value)
+        // this.valueToDegrees(value)
+        // const point3 = this.valueToPoint(value, 0.85)
+        // pointer(point1, point2, point3, 'red')
+
         const point1 = this.valueToPoint(value, 0.2)
-        const point2 = this.valueToPoint(value + 20, 0.2)
-        const point3 = this.valueToPoint(value, 0.85)
-        pointer(point1, point2, point3, 'red')
+        const point2 = this.valueToPoint(value, 0.85)
+        container.append('svg:line')
+            .attr('x1', point1.x)
+            .attr('y1', point1.y)
+            .attr('x2', point2.x)
+            .attr('y2', point2.y)
+            .attr('class', 'pointer')
+            .style('stroke', "#ffffff")
+            .style('stroke-width', 1);
     }
 }
