@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import Papa from 'papaparse'
 import moment from 'moment'
-const LIMIT = 2000
+const LIMIT = 1000
 const state = {
     statistic: []
 }
@@ -16,38 +16,40 @@ const getters = {
                 values: []
             }
         } else {
-            time = state.statistic[0].values
+            time = state.statistic[1].values
         }
         const data = stat.values.map( (item, index) => {
+            return [new Date(+time[index]), +item]
             return {
-                x:  moment(moment.unix(+time[index]), "HH:mm:ss"),
-                y: item
+                x:  date,
+                y: +item
             }
         })
-        const chartData = {
-            labels: ['January'],
-            datasets: [
-                {
-                    label: stat.label,
-                    backgroundColor: '#f87979',
-                    data
-                }
-            ]
+        return data
+    },
+    statLabel: (stage) => (index) => {
+        let stat = state.statistic[index]  
+        if(!stat) {
+            stat = {
+                label: 'Loading',
+                values: []
+            }
         }
-        return chartData
+        return stat.label
     }
+
 }
 const actions = {
     loadStat({ commit }) {
-        // if(localStorage.getItem('statistic')) {
-        //     const data = JSON.parse(localStorage.getItem('statistic'))
-        //     commit('setup', data)
-        //     return
-        // }
+        if(localStorage.getItem('statistic')) {
+            const data = JSON.parse(localStorage.getItem('statistic'))
+            commit('setup', data)
+            return
+        }
         Papa.parse("static/chart.csv", {
             download: true,
             complete: function (results) {
-                const data = results.data.splice(0, LIMIT);
+                const data = results.data
                 commit('load', data)
             }
         });
@@ -68,7 +70,7 @@ const mutations = {
             })
         })
         state.statistic = chartData
-        // localStorage.setItem('statistic', JSON.stringify(chartData));
+        localStorage.setItem('statistic', JSON.stringify(chartData));
     }
 }
 Vue.use(Vuex)

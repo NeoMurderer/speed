@@ -1,7 +1,7 @@
 const COLOR = {
     inactive: '#071738'
 }
-const dashes = [0, 40, 80, 120, 160, 200, 240, 280]
+const dashes = [0, 200, 400, 600, 800, 1000, 1200, 1400,1600, 1800, 2000]
 const warningZone = 200
 const dangetZone = 260
 export default class Widget {
@@ -30,9 +30,9 @@ export default class Widget {
         this.options = {
             el: '#widget',
             min: 0,
-            max: 280,
-            majorTicks: 8,
-            minorTicks: 4,
+            max: 2000,
+            majorTicks: 11,
+            minorTicks: 9,
             get size() {
                 return document.querySelector(this.el).offsetWidth
             },
@@ -75,21 +75,22 @@ export default class Widget {
 
 
 
-        const max = 120;
-        const min = 50;
-        const speed = 120
-        let side = +1;
-        let i = min;
-        const next = () => {
-        if (i == max || i == min - 1) side *= -1;
-        return (i += 1 * side);
-        };
-        setInterval(() => {
-            const rand = next();
-            this.redraw(rand, speed);
-          }, speed);
+        // const max = 2000;
+        // const min = 0;
+        // const speed = 120
+        // let side = +1;
+        // let i = min;
+        // const next = () => {
+        // if (i == max || i == min - 1) side *= -1;
+        // return (i += 1 * side);
+        // };
+        // setInterval(() => {
+        //     const rand = next();
+            this.redraw(580, 120);
+        //   }, speed);
     }
     drawCircle() {
+    
         const options = this.options
         let container = this.draw.select(options.el)
             .append('svg')
@@ -98,6 +99,7 @@ export default class Widget {
             .attr('height', options.size)
 
         container = container.append("svg:g").attr("class", "pointerContainer");
+
         container.append('svg:circle')
             .attr('cx', options.cx)
             .attr('cy', options.cy)
@@ -168,17 +170,18 @@ export default class Widget {
         const { options, draw, container } = this
         let fontSize = Math.round(options.raduis / 7);
         const middle = options.middleValue
+        console.log('middle', middle)
         dashes.map(major => {
             let anchor = 'middle'
             let point = this.valueToPoint(major, .65);
 
             container.append('svg:text')
-                .attr('y', point.y + 5)
+                .attr('y', point.y + 8)
                 .attr('text-anchor', anchor)
                 .text(major)
                 .attr('x', function (d) {
                     const half = this.getBBox().width / 2
-                    console.log(half)
+                    if(middle == major) return point.x
                     if (middle < major) return point.x - half
                     return point.x + half
                 })
@@ -210,19 +213,49 @@ export default class Widget {
     }
     drawBand(path, start, end, color, className) {
 
+        var gradient = path.append("svg:defs")
+        .append("svg:radialGradient")
+        .attr("id", "gradient")
+        .attr("x1", "0%")
+        .attr("y1", "28%")
+        .attr("x2", "74%")
+        .attr("y2", "89%")
+        .attr("y2", "100%")
+        .attr("spreadMethod", "pad");
+    
+    // Define the gradient colors
+    gradient.append("svg:stop")
+        .attr("offset", "0%")
+        .attr("stop-color", "#ffffff")
+        .attr("stop-opacity", 0);
+    gradient.append("svg:stop")
+        .attr("offset", "28%")
+        .attr("stop-color", "#1787ff")
+        .attr("stop-opacity", 0);
+    gradient.append("svg:stop")
+        .attr("offset", "74%")
+        .attr("stop-color", "#1787ff")
+        .attr("stop-opacity", 1);
+    gradient.append("svg:stop")
+        .attr("offset", "89%")
+        .attr("stop-color", "#17d8ff")
+        .attr("stop-opacity", 1);
+    gradient.append("svg:stop")
+        .attr("offset", "100%")
+        .attr("stop-color", "#17d8ff")
+        .attr("stop-opacity", 1);
         return path
             .append('svg:path')
             .attr('class', className || 'noname')
-            .style('fill', color)
+            .style('fill', 'url(#gradient)')
             .attr('d', this.getArc(start, end))
             .attr('transform', () => { return 'translate(' + this.options.cx + ', ' + this.options.cy + ') rotate(270)' });
     }
 
     drawDashes() {
         const { options, draw, container } = this
-        const majorDelta = options.range / (options.majorTicks - 1);
         let fontSize = Math.round(options.fontSize);
-        const   drawDashLine = (point1, point2, color, width = options.dashWidth) => {
+        const drawDashLine = (point1, point2, color, width = options.dashWidth) => {
             container.append('svg:line')
                 .attr('x1', point1.x)
                 .attr('y1', point1.y)
@@ -231,10 +264,12 @@ export default class Widget {
                 .style('stroke', color)
                 .style('stroke-width', width);
         }
-        dashes.map(major => {
-            const minorDelta = majorDelta / options.minorTicks;
-            // Draw small points
-            for (let minor = major + minorDelta; minor < Math.min(major + majorDelta, options.max); minor += minorDelta) {
+        dashes.map( (major, index) => {
+        const minorDelta = (dashes[index + 1] - major) / (options.majorTicks -1);
+        console.log('minorDelta', minorDelta)
+        // Draw small points
+            for (let minor = major + minorDelta; minor < Math.min(dashes[index + 1], options.max); minor += minorDelta) {
+                console.log('minor', minor)
                 const point1 = this.valueToPoint(minor, 0.75);
                 const point2 = this.valueToPoint(minor, 0.85);
                 drawDashLine(point1, point2, '#fff')
@@ -245,7 +280,7 @@ export default class Widget {
                     drawDashLine(point1, point2, '#050A20', 1)
                 }
             }
-
+            console.log('major', major)
             // Draw big point
             const point1 = this.valueToPoint(major, 0.7);
             const point2 = this.valueToPoint(major, 0.85);

@@ -14,12 +14,10 @@ Vue.component('line-chart', {
                         },
                         type: "time",
                         time: {
-                            unit: "second",
                             displayFormats: {
-                                second: "mm:ss"
+                                quarter: 'MMM YYYY'
                             }
                         },
-
                         position: "bottom"
                     }
                 ]
